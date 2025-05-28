@@ -5,6 +5,7 @@ import os # To help with file paths
 from prophet import Prophet # Import Prophet for forecasting
 import logging # For better logging of Prophet messages
 import warnings # To suppress specific warnings
+import json # To pass data to JavaScript
 
 # Suppress cmdstanpy warnings (often verbose from Prophet)
 logging.getLogger('cmdstanpy').setLevel(logging.WARNING)
@@ -22,10 +23,11 @@ DATA_FILE = os.path.join(os.path.dirname(__file__), 'Walmart_customer_purchases.
 def home():
     """
     Loads, preprocesses, trains a Prophet model, makes sales predictions for 2025 (season-wise),
-    and displays the results in the web application.
+    and displays the results in the web application along with a visualization.
     """
     df_summary_html = ""
     forecast_summary_html = ""
+    chart_data_json = "{}" # Initialize as empty JSON string
     error_message = None
 
     # --- Debugging: Print the full path the app is looking for ---
@@ -46,7 +48,6 @@ def home():
         # 2. Aggregate sales data by week
         # Prophet requires a 'ds' (datetime) and 'y' (numeric) column.
         # We'll aggregate to the end of the week (Sunday by default for 'W')
-        # to ensure consistent weekly points.
         # First, set Purchase_Date as index for resampling
         df_resampled = df.set_index('Purchase_Date').resample('W')['Purchase_Amount'].sum().reset_index()
 
@@ -92,31 +93,23 @@ def home():
 
         # --- Sales Forecasting with Prophet ---
         # Initialize and fit the Prophet model
-        # We add weekly and yearly seasonality. Daily is not relevant for weekly data.
-        # Adjusting seasonality_mode to 'multiplicative' can sometimes capture
-        # increasing/decreasing seasonal impact better for sales data.
         model = Prophet(weekly_seasonality=True, yearly_seasonality=True, seasonality_mode='multiplicative')
         model.fit(df_resampled)
 
         # Create a DataFrame with future dates for 2025
-        # We need to forecast for all weeks in 2025. There are 52 or 53 weeks.
-        # We'll generate 53 weeks to cover the entire year, as Prophet handles this.
         future = model.make_future_dataframe(periods=53, freq='W') # 'W' for weekly frequency
 
-        # Filter future dates to only include 2025
-        future_2025 = future[future['ds'].dt.year == 2025]
+        # Make predictions for the entire future dataframe (including historical dates)
+        forecast_full = model.predict(future)
 
-        # Make predictions
-        forecast = model.predict(future_2025)
+        # Filter forecast to only include 2025 for seasonal summary
+        forecast_2025_only = forecast_full[forecast_full['ds'].dt.year == 2025]
 
         # --- Season-wise Prediction Aggregation for 2025 ---
-        # Define seasons (quarters)
-        # Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Oct-Dec
-        forecast['quarter'] = forecast['ds'].dt.quarter
-        forecast['year'] = forecast['ds'].dt.year
+        forecast_2025_only['quarter'] = forecast_2025_only['ds'].dt.quarter
+        forecast_2025_only['year'] = forecast_2025_only['ds'].dt.year
 
-        # Aggregate predictions by quarter for 2025
-        seasonal_forecast_2025 = forecast.groupby(['year', 'quarter'])['yhat'].sum().reset_index()
+        seasonal_forecast_2025 = forecast_2025_only.groupby(['year', 'quarter'])['yhat'].sum().reset_index()
         seasonal_forecast_2025['quarter_name'] = seasonal_forecast_2025['quarter'].map({
             1: 'Q1 (Jan-Mar)',
             2: 'Q2 (Apr-Jun)',
@@ -153,6 +146,25 @@ def home():
         </div>
         """
 
+        # --- Prepare data for Chart.js visualization ---
+        # Combine historical and forecasted data for plotting
+        # We need 'ds' (date) and 'y' (actual sales) from df_resampled
+        # and 'ds' (date) and 'yhat' (predicted sales) from forecast_full
+        plot_data = pd.DataFrame({
+            'ds': pd.concat([df_resampled['ds'], forecast_full['ds']]),
+            'y_actual': pd.concat([df_resampled['y'], pd.Series([None]*len(forecast_full))]), # Actuals only for historical
+            'y_forecast': pd.concat([pd.Series([None]*len(df_resampled)), forecast_full['yhat']]), # Forecasts for all
+            'yhat_lower': pd.concat([pd.Series([None]*len(df_resampled)), forecast_full['yhat_lower']]),
+            'yhat_upper': pd.concat([pd.Series([None]*len(df_resampled)), forecast_full['yhat_upper']])
+        }).sort_values('ds').reset_index(drop=True)
+
+        # Convert datetime objects to string for JSON serialization
+        plot_data['ds'] = plot_data['ds'].dt.strftime('%Y-%m-%d')
+
+        # Convert DataFrame to dictionary and then to JSON
+        chart_data_json = json.dumps(plot_data.to_dict(orient='list'))
+
+
     except FileNotFoundError as e:
         error_message = str(e) + f" Please ensure '{os.path.basename(DATA_FILE)}' is in the same directory as 'app.py'."
         print(f"File Error: {error_message}")
@@ -173,28 +185,152 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Walmart Sales Forecaster - Forecast Ready!</title>
+        <title>Walmart Sales Forecaster - Forecast Visualization</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
         <style>
             body {{
                 font-family: 'Inter', sans-serif;
                 background-color: #f0f4f8; /* Light blue-gray background */
             }}
+            .chart-container {{
+                position: relative;
+                height: 400px; /* Fixed height for the chart */
+                width: 100%;
+                margin-top: 2rem;
+                margin-bottom: 2rem;
+            }}
         </style>
     </head>
     <body class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-8 rounded-xl shadow-lg max-w-2xl w-full text-center">
+        <div class="bg-white p-8 rounded-xl shadow-lg max-w-4xl w-full text-center">
             <h1 class="text-4xl font-bold text-gray-800 mb-4">
-                Walmart Sales Forecaster - Forecast Ready!
+                Walmart Sales Forecaster - Forecast Visualization
             </h1>
             {"<p class='text-red-500 text-md mt-4 font-semibold'>" + error_message + "</p>" if error_message else "<p class='text-lg text-gray-600'>Data loaded, preprocessed, and sales forecast generated.</p>"}
             {df_summary_html if not error_message else ""}
             {forecast_summary_html if not error_message else ""}
+
+            {"" if not error_message else ""}
+            {"<h3 class='text-2xl font-semibold text-gray-700 mt-8 mb-4'>Weekly Sales: Historical & Forecasted</h3>" if not error_message else ""}
+            {"<div class='chart-container mx-auto'>" if not error_message else ""}
+            {"<canvas id='salesChart'></canvas>" if not error_message else ""}
+            {"</div>" if not error_message else ""}
+
             <p class="text-sm text-gray-500 mt-6">
-                We now have seasonal sales predictions for 2025!
+                We now have seasonal sales predictions for 2025 and a visual representation!
             </p>
         </div>
+
+        {"" if not error_message else ""}
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {{
+                const chartData = {chart_data_json}; // Data passed from Flask
+
+                if (Object.keys(chartData).length > 0 && chartData.ds && chartData.y_actual && chartData.y_forecast) {{
+                    const ctx = document.getElementById('salesChart').getContext('2d');
+                    new Chart(ctx, {{
+                        type: 'line',
+                        data: {{
+                            labels: chartData.ds,
+                            datasets: [
+                                {{
+                                    label: 'Actual Weekly Sales',
+                                    data: chartData.y_actual,
+                                    borderColor: 'rgb(75, 192, 192)',
+                                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                    fill: false,
+                                    tension: 0.1,
+                                    spanGaps: true // Connects nulls if there are gaps in actuals
+                                }},
+                                {{
+                                    label: 'Predicted Weekly Sales',
+                                    data: chartData.y_forecast,
+                                    borderColor: 'rgb(255, 99, 132)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                                    fill: false,
+                                    tension: 0.1,
+                                    spanGaps: true // Connects nulls if there are gaps in forecasts
+                                }},
+                                {{
+                                    label: 'Forecast Confidence Interval (Lower)',
+                                    data: chartData.yhat_lower,
+                                    borderColor: 'rgba(255, 99, 132, 0.3)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                    fill: '-1', // Fill below this line, connecting to the previous dataset
+                                    tension: 0.1,
+                                    pointRadius: 0,
+                                    borderWidth: 0,
+                                    hidden: true // Hide by default, can be toggled
+                                }},
+                                {{
+                                    label: 'Forecast Confidence Interval (Upper)',
+                                    data: chartData.yhat_upper,
+                                    borderColor: 'rgba(255, 99, 132, 0.3)',
+                                    backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                    fill: '1', // Fill above this line, connecting to the previous dataset
+                                    tension: 0.1,
+                                    pointRadius: 0,
+                                    borderWidth: 0,
+                                    hidden: true // Hide by default, can be toggled
+                                }}
+                            ]
+                        }},
+                        options: {{
+                            responsive: true,
+                            maintainAspectRatio: false, // Allows chart to fill container height
+                            scales: {{
+                                x: {{
+                                    type: 'time',
+                                    time: {{
+                                        unit: 'month',
+                                        tooltipFormat: 'MMM DD, YYYY',
+                                        displayFormats: {{
+                                            month: 'MMM YYYY'
+                                        }}
+                                    }},
+                                    title: {{
+                                        display: true,
+                                        text: 'Date'
+                                    }}
+                                }},
+                                y: {{
+                                    beginAtZero: true,
+                                    title: {{
+                                        display: true,
+                                        text: 'Weekly Sales ($)'
+                                    }},
+                                    ticks: {{
+                                        callback: function(value, index, values) {{
+                                            return '$' + value.toLocaleString();
+                                        }}
+                                    }}
+                                }}
+                            }},
+                            plugins: {{
+                                tooltip: {{
+                                    callbacks: {{
+                                        label: function(context) {{
+                                            let label = context.dataset.label || '';
+                                            if (label) {{
+                                                label += ': ';
+                                            }}
+                                            if (context.parsed.y !== null) {{
+                                                label += '$' + context.parsed.y.toLocaleString();
+                                            }}
+                                            return label;
+                                        }}
+                                    }}
+                                }}
+                            }}
+                        }}
+                    }});
+                }} else {{
+                    console.error("Chart data is missing or malformed:", chartData);
+                }}
+            }});
+        </script>
     </body>
     </html>
     """
