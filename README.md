@@ -1,5 +1,3 @@
-Here is the updated README file for the Amazon Big Mart Sales Prediction project, with the license section removed as requested.
-
 Amazon Big Mart Sales Prediction
 Welcome to the Amazon-Big-Mart-Sales-Prediction repository! This project focuses on predicting sales for Big Mart stores using machine learning techniques. The application employs a machine learning model to forecast sales based on various features, providing valuable insights into retail performance.
 
@@ -27,8 +25,6 @@ Challenges Faced
 Lessons Learned
 
 Why I Created This Repository
-
-Contact
 
 📖 Introduction
 This repository features a project aimed at predicting sales for Big Mart stores using a machine learning model. The project includes data preprocessing, model training, and deployment aspects. It's a practical example of leveraging machine learning for retail analytics and sales forecasting.
@@ -163,16 +159,3 @@ Deployment considerations and challenges for web applications.
 
 🌟 Why I Created This Repository
 This repository was created to showcase a practical application of machine learning for sales forecasting in a retail setting. It demonstrates how to build, train, and deploy a predictive model using Flask.
-
-📬 Contact
-Email: iconicemon01@gmail.com
-
-WhatsApp: +8801834363533
-
-GitHub: Md-Emon-Hasan
-
-LinkedIn: Md Emon Hasan
-
-Facebook: Md Emon Hasan
-
-Feel free to adjust and expand this template according to your project’s specifics and requirements.
