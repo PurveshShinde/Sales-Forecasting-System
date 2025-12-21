@@ -52,6 +52,7 @@ Then open your browser at:
 cpp
 Copy code
 http://127.0.0.1:5000
+```
 🛠 Model Training
 To retrain the model:
 
@@ -65,15 +66,16 @@ Save the trained model to models/
 Once the server is running, use the web form or send JSON to the prediction endpoint:
 
 bash
+```
 Copy code
 curl -X POST http://127.0.0.1:5000/predict \
      -H "Content-Type: application/json" \
      -d '{"feature1": value, "feature2": value, ...}'
 Customize inputs based on your dataset’s feature schema.
-
+```
 🧪 Examples
 Example request for prediction:
-
+```
 json
 Copy code
 {
@@ -90,7 +92,7 @@ Copy code
   "prediction": 23450.78
 }
 Adjust above fields to match your feature set.
-
+```
 🤝 Contributing
 Contributions are welcome:
 
