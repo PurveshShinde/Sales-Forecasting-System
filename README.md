@@ -8,16 +8,17 @@ This project was developed as a 3rd-year Computer Science group project.
 Sales Forecaster trains a regression model to predict sales (e.g., retail/store sales).
 It includes data preprocessing, model training, and a simple Flask web application to interact with predictions.
 
-📦 Project Structure
-├── models/              # Saved trained models
-├── static/              # Frontend assets
-├── templates/           # HTML templates
-├── app.py               # Flask application
-├── model.ipynb          # Model training notebook
-├── requirements.txt     # Python dependencies
-├── Train.csv            # Training dataset
+## 📦 Project Structure
+
+├── models/                     # Saved/trained models
+├── static/                     # Frontend assets (CSS/JS)
+├── templates/                  # HTML templates for web UI
+├── app.py                      # Flask server
+├── model.ipynb                 # Training notebook
+├── requirements.txt            # Dependencies
+├── Train.csv                   # Training dataset
 ├── Walmart_customer_purchases.csv
-└── README.md
+└── README.md                   # Project documentation
 
 🚀 Getting Started
 Prerequisites
