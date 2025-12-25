@@ -10,7 +10,7 @@ It includes data preprocessing, model training, and a simple Flask web applicati
 
 ## 📦 Project Structure
 
-├── models/                     # Saved/trained models
+├── models/  # Saved/trained models
 ├── static/                     # Frontend assets (CSS/JS)
 ├── templates/                  # HTML templates for web UI
 ├── app.py                      # Flask server
