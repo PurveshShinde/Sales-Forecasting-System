@@ -11,13 +11,21 @@ It includes data preprocessing, model training, and a simple Flask web applicati
 ## 📦 Project Structure
 
 ├── models/  # Saved/trained models
+
 ├── static/                     # Frontend assets (CSS/JS)
+
 ├── templates/                  # HTML templates for web UI
+
 ├── app.py                      # Flask server
+
 ├── model.ipynb                 # Training notebook
+
 ├── requirements.txt            # Dependencies
+
 ├── Train.csv                   # Training dataset
+
 ├── Walmart_customer_purchases.csv
+
 └── README.md                   # Project documentation
 
 🚀 Getting Started
