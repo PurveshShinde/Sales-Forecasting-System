@@ -1,3 +1,5 @@
+<div align="center">
+
 # 📈 Sales Forecaster
 
 [![Python Version](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
@@ -5,6 +7,8 @@
 [![Scikit-Learn](https://img.shields.io/badge/scikit--learn-1.5.1-orange?logo=scikit-learn)](https://scikit-learn.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub contributors](https://img.shields.io/github/contributors/PurveshShinde/Sales-Forecasting-System.svg)](https://github.com/PurveshShinde/Sales-Forecasting-System/graphs/contributors)
+
+</div>
 
 A machine learning–based project to predict future sales using historical data. This project was developed as a 3rd-year Computer Science group project to help businesses and retail stores optimize their inventory and estimate their revenue.
 
